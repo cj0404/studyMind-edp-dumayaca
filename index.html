@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudyMind — AI Study Planner</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Parallax Background -->
+  <div class="parallax-bg" id="parallaxBg">
+    <div class="parallax-layer layer-1"></div>
+    <div class="parallax-layer layer-2"></div>
+    <div class="parallax-layer layer-3"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" aria-label="Sidebar Navigation">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">StudyMind</span>
+      <button class="close-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-section="tasks">
+        <span class="nav-icon">📋</span> My Tasks
+      </a>
+      <a href="#" class="nav-item" data-section="schedule">
+        <span class="nav-icon">🗓️</span> Schedule
+      </a>
+      <a href="#" class="nav-item" data-section="ai">
+        <span class="nav-icon">✨</span> AI Generator
+      </a>
+      <a href="#" class="nav-item" data-section="video">
+        <span class="nav-icon">🎬</span> Tutorial
+      </a>
+    </nav>
+
+    <div class="sidebar-shortcuts">
+      <p class="shortcut-title">Keyboard Shortcuts</p>
+      <div class="shortcut"><kbd>C</kbd> Open sidebar</div>
+      <div class="shortcut"><kbd>ESC</kbd> Close sidebar</div>
+      <div class="shortcut"><kbd>Enter</kbd> Add task / Generate AI</div>
+      <div class="shortcut"><kbd>Shift+Enter</kbd> New line in AI</div>
+      <div class="shortcut"><kbd>S</kbd> Scroll to schedule</div>
+    </div>
+  </aside>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main Layout -->
+  <div class="layout" id="layout">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-brand">
+        <span class="brand-mark">✦</span>
+        <span class="brand-name">StudyMind</span>
+      </div>
+      <div class="topbar-right">
+        <span class="date-display" id="dateDisplay"></span>
+        <div class="status-dot" title="AI Ready"></div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1 class="hero-title">Study <em>smarter</em>,<br/>not harder.</h1>
+        <p class="hero-sub">AI-powered task planning & schedule generation for focused students.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-pill" id="statTotal"><span id="totalCount">0</span> Tasks</div>
+        <div class="stat-pill done" id="statDone"><span id="doneCount">0</span> Done</div>
+      </div>
+    </section>
+
+    <!-- Task Section -->
+    <section class="section tasks-section" id="tasksSection">
+      <div class="section-header">
+        <h2 class="section-title">My Tasks</h2>
+        <span class="section-badge" id="pendingBadge">0 pending</span>
+      </div>
+
+      <!-- Task Form -->
+      <form class="task-form" id="taskForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <input type="text" id="taskInput" class="task-input" placeholder="Add a task or topic..." autocomplete="off" maxlength="80" />
+            <span class="char-count" id="charCount">0/80</span>
+          </div>
+          <div class="form-group narrow">
+            <select id="subjectSelect" class="task-select">
+              <option value="">Subject</option>
+              <option value="Math">Math</option>
+              <option value="Science">Science</option>
+              <option value="English">English</option>
+              <option value="History">History</option>
+              <option value="CS">CS</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group narrow">
+            <select id="prioritySelect" class="task-select">
+              <option value="medium">Med</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="form-group narrow">
+            <input type="number" id="durationInput" class="task-input" placeholder="Mins" min="5" max="480" />
+          </div>
+          <button type="submit" class="btn-add" id="addTaskBtn">
+            <span>+</span> Add
+          </button>
+        </div>
+        <div class="form-error" id="formError"></div>
+      </form>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">Pending</button>
+        <button class="filter-btn" data-filter="done">Completed</button>
+        <button class="filter-btn" data-filter="high">🔴 High</button>
+        <div class="filter-right">
+          <button class="btn-clear-done" id="clearDoneBtn" title="Clear completed tasks">Clear Done</button>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <ul class="task-list" id="taskList">
+        <li class="task-empty" id="emptyState">
+          <div class="empty-icon">📚</div>
+          <p>No tasks yet. Add one above or let AI generate your schedule!</p>
+        </li>
+      </ul>
+    </section>
+
+    <!-- AI Schedule Generator -->
+    <section class="section ai-section" id="aiSection">
+      <div class="section-header">
+        <h2 class="section-title"><span class="ai-spark">✦</span> AI Schedule Generator</h2>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-left">
+          <p class="ai-description">Describe your subjects, deadlines, and study preferences. StudyMind AI will instantly generate a personalized day-by-day schedule — no internet or API key needed.</p>
+          <div class="ai-form">
+            <textarea id="aiPrompt" class="ai-textarea" placeholder="e.g. I have a Math exam in 3 days, English essay due next week, and Science quiz tomorrow. I study best in the morning.&#10;&#10;Press Enter to generate • Shift+Enter for new line" rows="4"></textarea>
+            <div class="ai-options">
+              <label>Study hours/day:
+                <input type="number" id="hoursPerDay" class="ai-small-input" value="4" min="1" max="12" />
+              </label>
+              <label>Days to plan:
+                <input type="number" id="planDays" class="ai-small-input" value="7" min="1" max="30" />
+              </label>
+            </div>
+            <button class="btn-ai" id="generateBtn">
+              <span class="ai-btn-icon">✦</span> Generate Schedule
+            </button>
+          </div>
+        </div>
+        <div class="ai-card-right">
+          <div class="ai-output" id="aiOutput">
+            <div class="ai-placeholder">
+              <div class="ai-placeholder-icon">🤖</div>
+              <p>Your AI-generated schedule will appear here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-loader" id="aiLoader">
+        <div class="loader-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <p>StudyMind AI is thinking...</p>
+      </div>
+    </section>
+
+    <!-- Schedule Section -->
+    <section class="section schedule-section" id="scheduleSection">
+      <div class="section-header">
+        <h2 class="section-title">Today's Schedule</h2>
+        <span class="section-badge" id="scheduleBadge">Auto-organized</span>
+      </div>
+      <div class="schedule-grid" id="scheduleGrid">
+        <div class="schedule-empty">No tasks scheduled yet. Add tasks above!</div>
+      </div>
+    </section>
+
+    <!-- Video Tutorial Section -->
+    <section class="section video-section" id="videoSection">
+      <div class="section-header">
+        <h2 class="section-title">🎬 Getting Started</h2>
+      </div>
+      <div class="video-card">
+        <div class="video-wrapper" id="videoWrapper">
+          <video id="tutorialVideo" preload="metadata" poster="">
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div class="video-overlay" id="videoOverlay">
+            <button class="play-btn" id="playBtn" aria-label="Play video">▶</button>
+          </div>
+          <div class="video-controls">
+            <button class="vid-ctrl" id="vidPlay" title="Play/Pause">▶</button>
+            <div class="progress-bar-wrap" id="progressWrap">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span class="vid-time" id="vidTime">0:00</span>
+            <button class="vid-ctrl" id="vidMute" title="Mute">🔊</button>
+          </div>
+        </div>
+        <div class="video-info">
+          <h3>How to use StudyMind</h3>
+          <p>Learn how to add tasks, generate AI schedules, and stay on track with your studies.</p>
+          <div class="video-events" id="videoEvents">
+            <span class="vid-event-pill" id="vidStatus">⏸ Not started</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>StudyMind © 2025 — Built with AI to help you study smarter.</p>
+    </footer>
+
+  </div><!-- end layout -->
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

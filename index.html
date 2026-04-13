@@ -11,10 +11,30 @@
 
   <!-- Parallax Background -->
   <div class="parallax-bg" id="parallaxBg">
-    <div class="parallax-layer layer-1"></div>
-    <div class="parallax-layer layer-2"></div>
-    <div class="parallax-layer layer-3"></div>
+    <!-- Deep layer: starfield (slowest) -->
+    <div class="parallax-layer layer-stars" id="layerStars"></div>
+    <!-- Mid layer: nebula clouds -->
+    <div class="parallax-layer layer-nebula" id="layerNebula">
+      <div class="nebula-orb nebula-1"></div>
+      <div class="nebula-orb nebula-2"></div>
+      <div class="nebula-orb nebula-3"></div>
+      <div class="nebula-orb nebula-4"></div>
+    </div>
+    <!-- Mid layer: floating geometric shapes -->
+    <div class="parallax-layer layer-shapes" id="layerShapes">
+      <div class="geo-shape shape-ring-1"></div>
+      <div class="geo-shape shape-ring-2"></div>
+      <div class="geo-shape shape-dot-cluster"></div>
+      <div class="geo-shape shape-line-1"></div>
+      <div class="geo-shape shape-line-2"></div>
+      <div class="geo-shape shape-hex"></div>
+    </div>
+    <!-- Foreground layer: floating particles (fastest) -->
+    <canvas class="parallax-canvas" id="parallaxCanvas"></canvas>
+    <!-- Grid overlay -->
     <div class="bg-grid"></div>
+    <!-- Vignette -->
+    <div class="bg-vignette"></div>
   </div>
 
   <!-- Sidebar -->

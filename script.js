@@ -467,24 +467,182 @@ function generateTimeSlots(taskArr) {
 }
 
 /* =============================================
-   SCROLL EVENTS — parallax + section animation
+   PARALLAX — multi-layer depth system
    ============================================= */
+
+// ── Canvas particle system ──
+(function initParticles() {
+    const canvas = document.getElementById("parallaxCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let W,
+        H,
+        particles = [],
+        scrollY = 0,
+        targetScrollY = 0,
+        rafId;
+
+    const COLORS = ["rgba(200,245,100,", "rgba(110,181,255,", "rgba(191,110,255,", "rgba(255,255,255,"];
+
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+
+    function createParticle() {
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        return {
+            x: Math.random() * W,
+            y: Math.random() * H,
+            baseY: Math.random() * H,
+            size: Math.random() * 2.5 + 0.5,
+            speed: Math.random() * 0.008 + 0.002, // parallax depth speed
+            opacity: Math.random() * 0.6 + 0.1,
+            twinkle: Math.random() * Math.PI * 2,
+            twinkleSpeed: Math.random() * 0.02 + 0.005,
+            color,
+        };
+    }
+
+    function init() {
+        resize();
+        particles = [];
+        const count = Math.min(Math.floor((W * H) / 8000), 180);
+        for (let i = 0; i < count; i++) particles.push(createParticle());
+    }
+
+    function draw(timestamp) {
+        ctx.clearRect(0, 0, W, H);
+
+        // Smooth scroll
+        scrollY += (targetScrollY - scrollY) * 0.08;
+
+        for (const p of particles) {
+            // Parallax: each particle shifts by its speed * scroll
+            const parallaxShift = scrollY * p.speed * 0.5;
+            const py = (((p.baseY - parallaxShift) % H) + H) % H;
+
+            // Twinkle
+            p.twinkle += p.twinkleSpeed;
+            const alpha = p.opacity * (0.7 + 0.3 * Math.sin(p.twinkle));
+
+            // Draw glow for larger particles
+            if (p.size > 1.5) {
+                const grd = ctx.createRadialGradient(p.x, py, 0, p.x, py, p.size * 3);
+                grd.addColorStop(0, p.color + alpha + ")");
+                grd.addColorStop(1, p.color + "0)");
+                ctx.beginPath();
+                ctx.arc(p.x, py, p.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = grd;
+                ctx.fill();
+            }
+
+            ctx.beginPath();
+            ctx.arc(p.x, py, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + alpha + ")";
+            ctx.fill();
+        }
+
+        rafId = requestAnimationFrame(draw);
+    }
+
+    window.addEventListener("resize", () => {
+        init();
+    });
+    window.addEventListener(
+        "scroll",
+        () => {
+            targetScrollY = window.scrollY;
+        },
+        {passive: true}
+    );
+
+    init();
+    requestAnimationFrame(draw);
+})();
+
+// ── Multi-layer scroll parallax ──
+// Note: layer transforms are driven by the mouse parallax RAF loop above
+// which reads window.scrollY each frame. handleScroll handles individual
+// orb & shape micro-offsets for extra depth.
 function handleScroll() {
     const scrollY = window.scrollY;
 
-    // Parallax layers
-    const layer1 = parallaxBg.querySelector(".layer-1");
-    const layer2 = parallaxBg.querySelector(".layer-2");
-    const layer3 = parallaxBg.querySelector(".layer-3");
+    // ── Fade parallax background as user scrolls down ──
+    // Fully visible at top, fully faded by 600px of scroll
+    const fadeStart = 0;
+    const fadeEnd = 600;
+    const fadeOpacity = Math.max(0, 1 - (scrollY - fadeStart) / (fadeEnd - fadeStart));
+    const parallaxBgEl = document.getElementById("parallaxBg");
+    if (parallaxBgEl) parallaxBgEl.style.opacity = fadeOpacity;
 
-    if (layer1) layer1.style.transform = `translateY(${scrollY * 0.15}px)`;
-    if (layer2) layer2.style.transform = `translateY(${-scrollY * 0.1}px) translateX(${scrollY * 0.05}px)`;
-    if (layer3) layer3.style.transform = `translateY(${scrollY * 0.08}px) rotate(${scrollY * 0.02}deg)`;
+    // Individual nebula orb drift (micro parallax within the layer)
+    const layerNebula = document.getElementById("layerNebula");
+    if (layerNebula) {
+        const orbs = layerNebula.querySelectorAll(".nebula-orb");
+        if (orbs[0]) orbs[0].style.transform = `translateY(${scrollY * 0.04}px) translateX(${scrollY * 0.012}px)`;
+        if (orbs[1]) orbs[1].style.transform = `translateY(${-scrollY * 0.05}px) translateX(${-scrollY * 0.015}px)`;
+        if (orbs[2]) orbs[2].style.transform = `translateY(${scrollY * 0.07}px) rotate(${scrollY * 0.01}deg)`;
+        if (orbs[3]) orbs[3].style.transform = `translateY(${-scrollY * 0.03}px)`;
+    }
+
+    // Individual shape micro-drift
+    const shapes = document.querySelectorAll(".geo-shape");
+    if (shapes[0]) shapes[0].style.marginTop = `${-scrollY * 0.06}px`;
+    if (shapes[2]) shapes[2].style.marginTop = `${-scrollY * 0.04}px`;
+
+    // Grid slow drift
+    const bgGrid = document.querySelector(".bg-grid");
+    if (bgGrid) bgGrid.style.transform = `translateY(${scrollY * 0.03}px)`;
 }
 
 window.addEventListener("scroll", handleScroll, {passive: true});
 
-// Intersection Observer for scroll-animate sections
+// ── Mouse parallax: subtle layer shift on cursor move ──
+(function initMouseParallax() {
+    let mouseX = 0,
+        mouseY = 0,
+        curX = 0,
+        curY = 0;
+    let ticking = false;
+
+    window.addEventListener(
+        "mousemove",
+        (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        },
+        {passive: true}
+    );
+
+    function tick() {
+        // Smooth lerp toward mouse
+        curX += (mouseX - curX) * 0.04;
+        curY += (mouseY - curY) * 0.04;
+
+        const scrollY = window.scrollY;
+
+        const layerStars = document.getElementById("layerStars");
+        if (layerStars) {
+            layerStars.style.transform = `translateY(${scrollY * 0.06}px) translate(${curX * 8}px, ${curY * 8}px)`;
+        }
+
+        const layerNebula = document.getElementById("layerNebula");
+        if (layerNebula) {
+            layerNebula.style.transform = `translateY(${scrollY * 0.12}px) translate(${curX * 18}px, ${curY * 18}px)`;
+        }
+
+        const layerShapes = document.getElementById("layerShapes");
+        if (layerShapes) {
+            layerShapes.style.transform = `translateY(${scrollY * 0.22}px) translate(${curX * 30}px, ${curY * 30}px)`;
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+})();
+
 function observeSections() {
     const observer = new IntersectionObserver(
         (entries) => {

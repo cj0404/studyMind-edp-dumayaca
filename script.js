@@ -1,8 +1,3 @@
-/* =============================================
-   StudyMind — AI Study Planner
-   script.js — All JS features
-   ============================================= */
-
 "use strict";
 
 // ===== STATE =====
